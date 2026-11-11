@@ -4,7 +4,7 @@ so that the solver can simply query the properties of the local blocks"""
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True)#i know you dont like dataclass but i do
 class Material:
     name: str
     D: tuple
@@ -41,5 +41,5 @@ rrod = Material(
     "ReflectorRod", (3.0, 0.3), (0.0, 0.055), ((0.0, 0.040), (0.0, 0.0)), (0.0, 0.0)
 )
 
-MATERIALS = {1: fuel1, 2: fuel, 3: frod, 4: refl, 5: rrod}
+MATERIALS = {0: fuel, 1: frod, 2: refl, 21: rrod}
 EMPTY = 0

@@ -8,34 +8,63 @@
     determine if they are valid cells."""
 import numpy as np
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
 
 
 class Grid:
     """intakes an array of (array: block locations, array: associated block materials)
     blocks include ref and fuel. unsure on incorporation of rods yet"""
 
-
     def __init__(self, blocks: tuple[tuple, tuple[int]]):
-        self.coo = blocks[0]
-        self.mat = blocks[1]
+        self.coo = np.array(blocks[0])
+        self.mat = np.array(blocks[1])
+        assert self.coo.shape[0] == len(self.mat)
         self.rebuild()
 
-        
-
     def rebuild(self):
+        """builds the location state of the core."""
         coo = self.coo
-        xs = np.arange(np.min(coo[:, 0]), np.max(coo[:, 0]) + 1)
-        ys = np.arange(
-            np.min(coo[:, 1]), np.max(coo[:, 1]) + 1
-        )  # making a box encapsulating the entire core and any air in that box
+        coo -= coo.min(axis=0)  # normalize
+
         if coo.shape[1] == 3:
-            zs = np.arange(np.min(coo[:, 2]), np.max(coo[:, 2]) + 1)
-
-            self.meshd = np.meshgrid(xs, ys, zs, indexing="ij")
+            sortidx = np.lexsort((coo[:, 0], coo[:, 2], coo[:, 1]))
         else:
-            self.meshd = np.meshgrid(xs, ys, indexing="ij")
+            sortidx = np.lexsort((coo[:, 0], coo[:, 1]))
+        coo = coo[sortidx]
+        # make coordinates vary quickest in x then z then y. my pref because minecraft does y as height.
+        mat = self.mat[sortidx]
 
+        # add padding to fill out the square
 
+        maxs = coo.max(axis=0)
+        mins = coo.min(axis=0)
+
+        dirs = [np.arange(low - 1, hi + 2) for low, hi in zip(mins, maxs)]
+        # make an arange for each axis, 1 beyond the lowest and 1 beyond the max
+        padding = np.meshgrid(*dirs, indexing="ij")  # merge all the combos into coords
+        # print(padding)
+        padcoords = np.stack(padding, axis=-1).reshape(-1, coo.shape[1])
+        print("PADCOORDS")
+        print(padcoords.shape)
+        # print(padcoords)  ######?????????????????
+
+        map = np.unique(np.vstack((coo, padcoords)),sorted=False,axis=0)
+        print(map)
+
+        #add the padding after the known blocks. this way i can resort with the material values too
+ 
+        plt.scatter(padcoords[:, 0] + 0.5, padcoords[:, 1] + 0.5, s=100, c="g")
+        plt.scatter(
+            coo[:, 0] + 0.5,
+            coo[:, 1] + 0.5,
+            s=100,
+        )
+        plt.scatter(map[:, 0] + 0.5, map[:, 1] + 0.5, s=100, c="b")
+        plt.xlim(-2, 4)
+        plt.ylim(-2, 4)
+        plt.gca().set_aspect("equal")
+        plt.grid(True)
+        plt.show()
 
     def subdivide(self, N: tuple[int, int, int]):
         xnew = np.linspace(meshd[:, 0])
@@ -54,8 +83,5 @@ class Grid:
 
 
 A = np.array([[0, 0], [0, 1], [1, 1], [1, 0]])
-G = Grid((A, (0, 0, 0, 0)))
-
-print(A)
-
-print(G.coo)
+M=np.array([1,2,3,4])
+G = Grid((A, M))

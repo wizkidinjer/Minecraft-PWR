@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 class Grid:
-    """intakes an array of (array: block locations, array: associated block materials)
+    """intakes an array of (array: block locations [2/3D], array: associated block materials)
     blocks include ref and fuel. unsure on incorporation of rods yet"""
 
     def __init__(self, blocks: tuple[tuple, tuple[int]]):
@@ -40,33 +40,61 @@ class Grid:
         mins = coo.min(axis=0)
 
         dirs = [np.arange(low - 1, hi + 2) for low, hi in zip(mins, maxs)]
+        # need plus 1 pad block but arange goes to -1 top or range
+
         # make an arange for each axis, 1 beyond the lowest and 1 beyond the max
-        padding = np.meshgrid(*dirs, indexing="ij")  # merge all the combos into coords
+        padding = np.meshgrid(*dirs, indexing="ij")
+        # this makes all possible x and y combos. it stores an x array and y array
+        # print(f'XVALS: {padding[0]}')
+        # print()
+        # print(f'Y VALS: {padding[1]}')
+
         # print(padding)
         padcoords = np.stack(padding, axis=-1).reshape(-1, coo.shape[1])
-        print("PADCOORDS")
-        print(padcoords.shape)
-        # print(padcoords)  ######?????????????????
+        # axis -1 pairs the X and Y arrays such that they make coordinate pairs. makes a weird array tho so reshape it
+        sameidx = ~np.any(
+            np.all(padcoords[:, None, :] == coo[None, :, :], axis=2), axis=1
+        )
+        aircoords = padcoords[sameidx]
+        map = np.vstack((coo, aircoords))
 
-        map = np.unique(np.vstack((coo, padcoords)),sorted=False,axis=0)
+        # print(padcoords[:,None,:].shape)
+        # print(coo[None,:,:].shape)
+        # add the padded elements to the end of the known blocks. this way i can sort -1 material values where i want
+        air = -1 * np.ones(padcoords.shape[0] - coo.shape[0])  # air is -1 mat number
+        mat = np.hstack((mat, air))
+
         print(map)
 
-        #add the padding after the known blocks. this way i can resort with the material values too
- 
-        plt.scatter(padcoords[:, 0] + 0.5, padcoords[:, 1] + 0.5, s=100, c="g")
-        plt.scatter(
-            coo[:, 0] + 0.5,
-            coo[:, 1] + 0.5,
-            s=100,
-        )
-        plt.scatter(map[:, 0] + 0.5, map[:, 1] + 0.5, s=100, c="b")
-        plt.xlim(-2, 4)
-        plt.ylim(-2, 4)
-        plt.gca().set_aspect("equal")
-        plt.grid(True)
+        # sort map and mats
+        if map.shape[1] == 3:
+            sorter = np.lexsort((map[:, 0], map[:, 2], map[:, 1]))
+        else:
+            sorter = np.lexsort((map[:, 0], map[:, 1]))
+        print()
+        map = map[sorter]
+        mat = mat[sorter]
+        # print(map)
+        # print(mat)
+
+        # make hNS, hSW arrays
+
+        # plt.scatter(padcoords[:, 0] + 0.5, padcoords[:, 1] + 0.5, s=100, c="g")
+        # plt.scatter(
+        #     coo[:, 0] + 0.5,
+        #     coo[:, 1] + 0.5,
+        #     s=100,
+        # )
+        fig=plt.figure()
+        ax=fig.add_subplot(projection='3d')
+        ax.scatter(map[:, 0] + 0.5, map[:, 1] + 0.5, map[:,2]+.5,s=100, c="b")
+        ax.set_xlim(-2, 4)
+        ax.set_ylim(-2, 4)
+        # ax.gca().set_aspect("equal")
+        ax.grid(True)
         plt.show()
 
-    def subdivide(self, N: tuple[int, int, int]):
+    def subdivide(self, Nx, Ny, Nz):
         xnew = np.linspace(meshd[:, 0])
 
     # def gridIndex(loc: tuple[float, float], matidx):
@@ -82,6 +110,17 @@ class Grid:
     #     pass
 
 
-A = np.array([[0, 0], [0, 1], [1, 1], [1, 0]])
-M=np.array([1,2,3,4])
+A = np.array(
+    [
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 1, 0],
+        [1, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+        [1, 0, 1],
+    ]
+)
+M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
 G = Grid((A, M))

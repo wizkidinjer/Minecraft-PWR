@@ -66,7 +66,6 @@ class Grid:
             sorter = np.lexsort((map[:, 0], map[:, 2], map[:, 1]))
         else:
             sorter = np.lexsort((map[:, 0], map[:, 1]))
-        print()
         map = map[sorter]
         mat = mat[sorter]
 
@@ -107,6 +106,7 @@ class Grid:
         self.h = 1 / np.array(Ns)
         # FIXME should generalize to hx[m] hy[m]  for x y z
         print(len(self.map), len(self.mat))
+        print("LENS")
 
     def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
         h = 1 / np.array([Nx, Ny, Nz])
@@ -126,23 +126,23 @@ class Grid:
         grid.save(f"fancy/pv/{filename}")
 
 
-A = np.array(
-    [
-        [0, 0, 0],
-        [0, 1, 0],
-        [1, 1, 0],
-        [1, 0, 0],
-        [0, 0, 1],
-        [0, 1, 1],
-        [1, 1, 1],
-        [1, 0, 1],
-    ]
-)
-M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+# A = np.array(
+#     [
+#         [0, 0, 0],
+#         [0, 1, 0],
+#         [1, 1, 0],
+#         [1, 0, 0],
+#         [0, 0, 1],
+#         [0, 1, 1],
+#         [1, 1, 1],
+#         [1, 0, 1],
+#     ]
+# )
+# M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
 # M = np.array([1, 2, 3, 4])
-G = Grid((A, M))
-G.subdivide()
-G.xport()
-print(G.h)
+# G = Grid((A, M))
+# G.subdivide()
+# # G.xport()
+

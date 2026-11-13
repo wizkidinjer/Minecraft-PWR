@@ -57,7 +57,7 @@ Minecraft-PWR/
 ├── fancy/               # Visualization and generated output assets
 └── README.md
 ```
-
+<!-- 
 ### Computational workflow
 
 ```text
@@ -96,9 +96,9 @@ Minecraft Block Geometry
  Neutron Flux / Power / Kinetics
 ```
 
-The last three computational stages represent the planned solver architecture.
+The last three computational stages represent the planned solver architecture. -->
 
----
+<!-- ---
 
 ## 1. `grid.py` — Geometry and Spatial Discretization
 
@@ -498,11 +498,11 @@ The planned numerical approach consists of:
 4. **Implicit integration:** Backward Euler time stepping for the coupled transient system.
 5. **Minecraft interaction:** Updates to material assignments and reactor geometry in response to block changes and control rod movement.
 
-The longer-term objective is to combine these elements into a continuously updated reactor model driven by in-game geometry.
+The longer-term objective is to combine these elements into a continuously updated reactor model driven by in-game geometry. -->
 
 ---
 
-## 4. Installation and Usage
+## Installation and Usage
 
 ### Requirements
 
@@ -521,7 +521,7 @@ pip install numpy pyvista matplotlib
 
 ### Example geometry
 
-A simple three-dimensional block assembly can be created using:
+A manual three-dimensional block assembly can be created using:
 
 ```python
 import numpy as np
@@ -568,18 +568,18 @@ The current export writes to the `fancy/pv/` directory relative to the program's
 
 - [x] Define two-group nuclear material data structures.
 - [x] Implement 2D and 3D block-coordinate input.
-- [x] Normalize coordinates and construct rectangular padded domains.
-- [x] Establish consistent spatial indexing.
+- [x] Create 3D padded domains for efficient consistent indexing of material cross sections.
 - [x] Implement uniform Cartesian spatial subdivision.
 - [x] Propagate material assignments to subdivided cells.
 - [x] Implement initial VTK/ParaView mesh export.
 - [ ] Implement boundary-condition treatment.
 - [ ] Assemble the cell-centered finite-volume diffusion operators.
 - [ ] Implement the coupled two-group steady-state solver.
-- [ ] Implement eigenvalue calculations for \(k_{\mathrm{eff}}\).
+- [ ] Verify the numerical methods against analytical and benchmark solutions.
+- [ ] Implement eigenvalue calculations for \(k\).
 - [ ] Add delayed neutron precursor groups.
 - [ ] Implement backward Euler transient integration.
-- [ ] Verify the numerical methods against analytical and benchmark solutions.
+- [ ] Verify Transient solution convergence.
 - [ ] Develop Minecraft block-face and control rod interfaces.
 - [ ] Integrate reactor state updates with Minecraft simulation ticks.
 - [ ] Export spatial neutron flux and power distributions to ParaView.
@@ -602,11 +602,11 @@ The benchmark reference document is available in the repository's `docs/` direct
 
 ## Contributing
 
-Minecraft-PWR is an evolving academic and experimental scientific computing project. Contributions involving reactor physics, numerical methods, Python optimization, verification, and Minecraft integration are welcome.
+Minecraft-PWR is an academic and experimental scientific computing project. Contributions involving reactor physics, numerical methods, Python optimization, verification, and Minecraft integration are welcome.
 
-The codebase is being developed modularly so that its geometry, nuclear data, numerical solution, and game-interface components can be tested and improved independently.
+<!-- The codebase is being developed modularly so that its geometry, nuclear data, numerical solution, and game-interface components can be tested and improved independently. -->
 
 ---
 
 **Minecraft-PWR**  
-*From voxel geometry to reactor physics.*
+*inji*

@@ -4,14 +4,14 @@ so that the solver can simply query the properties of the local blocks"""
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True, slots=True)#i know you dont like dataclass but i do
-class Material:
-    name: str
-    D: tuple
-    abs: tuple
-    s: tuple[tuple, tuple]  # from to
-    f: tuple  # nu Sf together
-    chi: tuple = (1.0, 0.0)
+class Material: #nvm i dont
+    def __init__(self, name, D, a, s: tuple[tuple, tuple], f, chi=(1.0, 0.0)):
+        self.name = name
+        self.D = D
+        self.a = a
+        self.s = s
+        self.f = f  # nu Sf together
+        self.chi = chi
 
     @property
     def rem(self):
@@ -42,4 +42,4 @@ rrod = Material(
 )
 
 MATERIALS = {0: fuel, 1: frod, 2: refl, 21: rrod}
-EMPTY = 0
+EMPTY = -1

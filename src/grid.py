@@ -104,8 +104,9 @@ class Grid:
 
         self.map = map[sort]  # sort xz major
         self.mat = submats[sort]
-        self.h=1/np.array(Ns)
-        print(len(self.map),len(self.mat))
+        self.h = 1 / np.array(Ns)
+        # FIXME should generalize to hx[m] hy[m]  for x y z
+        print(len(self.map), len(self.mat))
 
     def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
         h = 1 / np.array([Nx, Ny, Nz])
@@ -115,17 +116,14 @@ class Grid:
         grid = pv.ImageData(
             dimensions=tuple(shape + 1),
             spacing=tuple(h),
-            origin=tuple(self.map.min(axis=0))
+            origin=tuple(self.map.min(axis=0)),
         )
 
         # ParaView/VTK expects X fastest, then Y, then Z
         order = np.lexsort((self.map[:, 0], self.map[:, 1], self.map[:, 2]))
         grid.cell_data["material"] = self.mat[order].astype(int)
 
-        grid.save(f'fancy/pv/{filename}')
-
-
-
+        grid.save(f"fancy/pv/{filename}")
 
 
 A = np.array(

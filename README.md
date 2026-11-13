@@ -10,7 +10,7 @@
 
 ---
 <p align="center">
-  <img src="fancy/pv3d.png" alt="Minecraft-PWR reactor visualization" width="750">
+  <img src="fancy/pv3d2.png" alt="Minecraft-PWR reactor visualization" width="750">
 </p>
 
 ---

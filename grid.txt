@@ -1,1 +1,0 @@
-for every block in game add its xyz

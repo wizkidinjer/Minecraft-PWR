@@ -9,6 +9,7 @@
 import numpy as np
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
+import pyvista as pv
 
 
 class Grid:
@@ -45,11 +46,7 @@ class Grid:
         # make an arange for each axis, 1 beyond the lowest and 1 beyond the max
         padding = np.meshgrid(*dirs, indexing="ij")
         # this makes all possible x and y combos. it stores an x array and y array
-        # print(f'XVALS: {padding[0]}')
-        # print()
-        # print(f'Y VALS: {padding[1]}')
 
-        # print(padding)
         padcoords = np.stack(padding, axis=-1).reshape(-1, coo.shape[1])
         # axis -1 pairs the X and Y arrays such that they make coordinate pairs. makes a weird array tho so reshape it
         sameidx = ~np.any(
@@ -64,8 +61,6 @@ class Grid:
         air = -1 * np.ones(padcoords.shape[0] - coo.shape[0])  # air is -1 mat number
         mat = np.hstack((mat, air))
 
-        print(map)
-
         # sort map and mats
         if map.shape[1] == 3:
             sorter = np.lexsort((map[:, 0], map[:, 2], map[:, 1]))
@@ -74,40 +69,62 @@ class Grid:
         print()
         map = map[sorter]
         mat = mat[sorter]
-        # print(map)
-        # print(mat)
 
-        # make hNS, hSW arrays
+        self.map = map.astype(float)  # helps in subdividing
+        self.mat = mat
+        # self.subdivide()
 
-        # plt.scatter(padcoords[:, 0] + 0.5, padcoords[:, 1] + 0.5, s=100, c="g")
-        # plt.scatter(
-        #     coo[:, 0] + 0.5,
-        #     coo[:, 1] + 0.5,
-        #     s=100,
-        # )
-        fig=plt.figure()
-        ax=fig.add_subplot(projection='3d')
-        ax.scatter(map[:, 0] + 0.5, map[:, 1] + 0.5, map[:,2]+.5,s=100, c="b")
-        ax.set_xlim(-2, 4)
-        ax.set_ylim(-2, 4)
-        # ax.gca().set_aspect("equal")
-        ax.grid(True)
-        plt.show()
+    def subdivide(self, Nx=5, Ny=5, Nz=5):
+        """how many times to divide each block in x, y, z. constant for now.
+        This makes each h_i 1/Ni because original block is 1 m"""
+        dim = self.map.shape[1]
+        map = self.map
 
-    def subdivide(self, Nx, Ny, Nz):
-        xnew = np.linspace(meshd[:, 0])
+        # x: add linspace between 0 and 1. can easily be applied to any block
+        # if self.map.shape[1]==3:
+        Ns = [Nx, Ny, Nz][:dim]
 
-    # def gridIndex(loc: tuple[float, float], matidx):
-    # """3d grid to matrix indexing"""
-    #     x, y = loc
-    #     if matidx != 0:
-    #         return y + 3 * x
-    #     else:
-    #         pass
+        sublevels = np.meshgrid(
+            *[np.linspace(0, 1, N + 1)[:-1] for N in Ns], indexing="ij"
+        )
+        # this makes x y and z arrays for each possible coordinate combination but separates them. can impose them back and reshape to see the coords
+        sublevels = np.stack(sublevels, axis=-1).reshape(-1, dim)
+        # all real relative coords now
+        # print(sublevels)
 
-    # def getBlocks():
-    #     """update blocks function if geometry changes"""
-    #     pass
+        map = map[:, None, :] + sublevels[None, :, :]  # maintain [block,subdiv, coord]
+        submats = np.repeat(self.mat, sublevels.shape[0])
+        # since the meshgrid is block major we can sort the mats the same way because we just add copies of the same material value
+        map = map.reshape(-1, dim)  # at this point we are block major
+
+        if dim == 3:
+            sort = np.lexsort((map[:, 0], map[:, 2], map[:, 1]))
+        else:
+            sort = np.lexsort((map[:, 0], map[:, 1]))
+
+        self.map = map[sort]  # sort xz major
+        self.mat = submats[sort]
+        print(len(self.map),len(self.mat))
+
+    def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
+        h = 1 / np.array([Nx, Ny, Nz])
+
+        shape = np.rint(np.ptp(self.map, axis=0) / h).astype(int) + 1
+
+        grid = pv.ImageData(
+            dimensions=tuple(shape + 1),
+            spacing=tuple(h),
+            origin=tuple(self.map.min(axis=0))
+        )
+
+        # ParaView/VTK expects X fastest, then Y, then Z
+        order = np.lexsort((self.map[:, 0], self.map[:, 1], self.map[:, 2]))
+        grid.cell_data["material"] = self.mat[order].astype(int)
+
+        grid.save(f'fancy/pv/{filename}')
+
+
+
 
 
 A = np.array(
@@ -123,4 +140,9 @@ A = np.array(
     ]
 )
 M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+
+# A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
+# M = np.array([1, 2, 3, 4])
 G = Grid((A, M))
+G.subdivide()
+G.xport()

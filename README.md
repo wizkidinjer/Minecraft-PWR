@@ -9,6 +9,9 @@
 ![Status](https://img.shields.io/badge/Status-In%20Development-orange)
 
 ---
+<p align="center">
+  <img src="fancy/pv3d.png" alt="MC CORE" width="750">
+</p>
 
 ---
 

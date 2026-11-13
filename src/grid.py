@@ -104,6 +104,7 @@ class Grid:
 
         self.map = map[sort]  # sort xz major
         self.mat = submats[sort]
+        self.h=1/np.array(Ns)
         print(len(self.map),len(self.mat))
 
     def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
@@ -146,3 +147,4 @@ M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
 G = Grid((A, M))
 G.subdivide()
 G.xport()
+print(G.h)

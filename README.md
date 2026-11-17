@@ -53,7 +53,10 @@ Minecraft-PWR/
 ├── src/
 │   ├── grid.py          # Geometry, indexing, subdivision, export
 │   └── mats.py          # Nuclear materials and cross sections
-│
+│   └── spatial.py
+│   └── trans.py
+│   └── intake.py
+│   
 ├── docs/                # Documentation and benchmark references
 ├── fancy/               # Visualization and generated output assets
 └── README.md

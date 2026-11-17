@@ -45,6 +45,7 @@ class Grid:
 
         # make an arange for each axis, 1 beyond the lowest and 1 beyond the max
         padding = np.meshgrid(*dirs, indexing="ij")
+        # print(padding)
         # this makes all possible x and y combos. it stores an x array and y array
 
         padcoords = np.stack(padding, axis=-1).reshape(-1, coo.shape[1])
@@ -81,10 +82,10 @@ class Grid:
 
         # x: add linspace between 0 and 1. can easily be applied to any block
         # if self.map.shape[1]==3:
-        Ns = [Nx, Ny, Nz][:dim]
+        self.N = np.array([Nx, Ny, Nz][:dim])
 
         sublevels = np.meshgrid(
-            *[np.linspace(0, 1, N + 1)[:-1] for N in Ns], indexing="ij"
+            *[np.linspace(0, 1, n + 1)[:-1] for n in self.N], indexing="ij"
         )
         # this makes x y and z arrays for each possible coordinate combination but separates them. can impose them back and reshape to see the coords
         sublevels = np.stack(sublevels, axis=-1).reshape(-1, dim)
@@ -103,13 +104,33 @@ class Grid:
 
         self.map = map[sort]  # sort xz major
         self.mat = submats[sort]
-        self.h = 1 / np.array(Ns)
+        self.h = 1 / np.array(self.N)
         # FIXME should generalize to hx[m] hy[m]  for x y z
-        print(len(self.map), len(self.mat))
-        print("LENS")
+
+
+    def plot(self):
+        coo = self.map
+        h = getattr(self, "h", np.ones(coo.shape[1]))
+        pts = coo + h / 2
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
+
+        if pts.shape[1] == 2:
+            pts = np.column_stack((pts, np.zeros(len(pts))))
+
+        ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], c=self.mat, cmap="tab20", s=1000)
+
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        ax.set_aspect("equal")
+
+        plt.show()
 
     def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
-        h = 1 / np.array([Nx, Ny, Nz])
+        self.N=np.array([Nx,Ny,Nz])
+        h = 1 / self.N
 
         shape = np.rint(np.ptp(self.map, axis=0) / h).astype(int) + 1
 
@@ -140,9 +161,14 @@ class Grid:
 # )
 # M = np.array([1, 2, 3, 4, 5, 6, 7, 8])
 
-# A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
-# M = np.array([1, 2, 3, 4])
+# # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
+# # M = np.array([1, 2, 3, 4])
+
+
+# A = np.array([[0, 0, 0], [0, 0, 1]])
+# M = np.array([10,11])
 # G = Grid((A, M))
-# G.subdivide()
+# # G.subdivide()
 # # G.xport()
 
+# G.plot()

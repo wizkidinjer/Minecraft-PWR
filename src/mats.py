@@ -41,5 +41,7 @@ rrod = Material(
     "ReflectorRod", (3.0, 0.3), (0.0, 0.055), ((0.0, 0.040), (0.0, 0.0)), (0.0, 0.0)
 )
 
-MATERIALS = {0: fuel, 1: frod, 2: refl, 21: rrod}
+M = {0: fuel, 1: frod, 2: refl, 21: rrod}
 EMPTY = -1
+
+print(M[0].D)

@@ -82,10 +82,10 @@ class Grid:
 
         # x: add linspace between 0 and 1. can easily be applied to any block
         # if self.map.shape[1]==3:
-        self.N = np.array([Nx, Ny, Nz][:dim])
+        self.subdivisions = np.array([Nx, Ny, Nz][:dim])
 
         sublevels = np.meshgrid(
-            *[np.linspace(0, 1, n + 1)[:-1] for n in self.N], indexing="ij"
+            *[np.linspace(0, 1, n + 1)[:-1] for n in self.subdivisions], indexing="ij"
         )
         # this makes x y and z arrays for each possible coordinate combination but separates them. can impose them back and reshape to see the coords
         sublevels = np.stack(sublevels, axis=-1).reshape(-1, dim)
@@ -104,7 +104,8 @@ class Grid:
 
         self.map = map[sort]  # sort xz major
         self.mat = submats[sort]
-        self.h = 1 / np.array(self.N)
+        self.h = 1 / np.array(self.subdivisions)
+        self.N=np.ptp(self.map,axis=0)*self.subdivisions+1
         # FIXME should generalize to hx[m] hy[m]  for x y z
 
 
@@ -129,9 +130,9 @@ class Grid:
         plt.show()
 
     def xport(self, filename="grid.vti", Nx=5, Ny=5, Nz=5):
-        self.N=np.array([Nx,Ny,Nz])
-        h = 1 / self.N
-
+        # self.N=np.array([Nx,Ny,Nz])
+        # h = 1 / self.N
+        h=self.h
         shape = np.rint(np.ptp(self.map, axis=0) / h).astype(int) + 1
 
         grid = pv.ImageData(
@@ -168,7 +169,7 @@ class Grid:
 # A = np.array([[0, 0, 0], [0, 0, 1]])
 # M = np.array([10,11])
 # G = Grid((A, M))
-# # G.subdivide()
-# # G.xport()
+# G.subdivide()
+# G.xport()
 
 # G.plot()

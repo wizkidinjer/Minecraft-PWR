@@ -14,6 +14,7 @@ class Sptl:
         self.grid = grid
         self.N = grid.N
         self.h = 100 * grid.h
+        self.G = len(M[0].a)  # 2
 
         # original indices where active cells are
         self.activeIDX = np.where(self.grid.mat >= 0)[0]
@@ -25,15 +26,15 @@ class Sptl:
     def matCoef(self):
         n = len(self.active)  # total num cells
 
-        self.D = np.zeros((n, 2)) #all these are [cell, group]
+        self.D = np.zeros((n, 2))  # all these are [cell, group]
         self.rem = np.zeros((n, 2))
-        self.s = np.zeros((n, 2, 2)) # cell, from, to
+        self.s = np.zeros((n, 2, 2))  # cell, from, to
         self.f = np.zeros((n, 2))
         self.chi = np.zeros((n, 2))
 
         for matID, material in M.items():
             # example 0, fuel so i can pull fuel props from 0 in th emat array
-            mask = self.grid.mat == matID  # mask where matID is fuel
+            mask = self.active == matID  # mask where matID is fuel
             self.D[mask] = material.D
             # if we are on 0 for fuel, all the fuel cells will get fuel.D, etc
             self.rem[mask] = material.rem
@@ -41,7 +42,38 @@ class Sptl:
             self.f[mask] = material.f
             self.chi[mask] = material.chi
 
-        print(self.s[2105, :, :])
+    def leakage(self):
+        Nx = self.N[0]
+        if len(self.N) == 3:
+            strides = np.array([
+                1,
+                -1,
+                Nx * self.N[2],
+                -Nx * self.N[2],
+                Nx,
+                -Nx,
+            ]).astype(int)
+        # length to x nbr, y nbr, z nbr
+        else:
+            strides = np.array([1, -1, Nx, -Nx]).astype(int)
+        
+
+        Ms = []
+        for g in range(self.G):
+            rows, cols, vals = [], [], []
+
+            for dir, stride in enumerate(strides):
+                hdir = self.h[dir]
+
+                nbrIDX = self.activeIDX + stride  # find neighbors in orignial
+                nbr = self.grid.mat[nbrIDX]
+                interior = nbr >= 0 #interiors will have nbrs of real cells
+                boundary = nbr == -1
+
+                i=np.where(interior)[0]
+                print(i)
+                j=np.searchsorted(self.activeIDX,nbrIDX[interior])
+                print(j)
 
     # def build(self):
     #     """build the A matrix. first build B, abs plus leakage values of each cell. should be 5/7diag for 2/3d"""
@@ -87,9 +119,10 @@ A = np.array(
 MMat = np.array([1, 2, 3, 4, 5, 6, 7, 8])
 
 G = Grid((A, MMat))
-G.subdivide()
+# G.subdivide()
 
 s = Sptl(G)
 # print(s.d(1, 2, 0))
 
-s.cellCoef()
+s.matCoef()
+s.leakage()

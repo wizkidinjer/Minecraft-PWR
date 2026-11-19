@@ -72,6 +72,8 @@ class Grid:
 
         self.map = map.astype(float)  # helps in subdividing
         self.mat = mat
+        self.N=np.ptp(self.map,axis=0)
+        self.h=np.array([1,1,1])
         # self.subdivide()
 
     def subdivide(self, Nx=5, Ny=5, Nz=5):

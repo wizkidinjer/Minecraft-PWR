@@ -4,7 +4,7 @@ so that the solver can simply query the properties of the local blocks"""
 from dataclasses import dataclass
 
 
-class Material: #nvm i dont
+class Material:  # nvm i dont
     def __init__(self, name, D, a, s: tuple[tuple, tuple], f, chi=(1.0, 0.0)):
         self.name = name
         self.D = D
@@ -16,9 +16,9 @@ class Material: #nvm i dont
     @property
     def rem(self):
         return tuple(
-            self.abs[h] + sum(self.s[h][g] for g in range(2) if g != h)
-            for h in range(2)
-        )  # abs plus outscatters
+            self.a[h] + sum(self.s[h][g] for g in range(2) if g != h) for h in range(2)
+        )
+        # abs plus outscatters
 
 
 # fuel1 = Material(
@@ -43,5 +43,3 @@ rrod = Material(
 
 M = {0: fuel, 1: frod, 2: refl, 21: rrod}
 EMPTY = -1
-
-print(M[0].D)

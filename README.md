@@ -576,11 +576,11 @@ The current export writes to the `fancy/pv/` directory relative to the program's
 - [x] Implement uniform Cartesian spatial subdivision.
 - [x] Propagate material assignments to subdivided cells.
 - [x] Implement initial VTK/ParaView mesh export.
-- [ ] Implement boundary-condition treatment.
-- [ ] Assemble the cell-centered finite-volume diffusion operators.
-- [ ] Implement the coupled two-group steady-state solver.
+- [x] Implement boundary-condition treatment.
+- [x] Assemble the cell-centered finite-volume diffusion operators.
+- [x] Implement the coupled two-group steady-state solver.
 - [ ] Verify the numerical methods against analytical and benchmark solutions.
-- [ ] Implement eigenvalue calculations for \(k\).
+- [x] Implement eigenvalue calculations for \(k\).
 - [ ] Add delayed neutron precursor groups.
 - [ ] Implement backward Euler transient integration.
 - [ ] Verify Transient solution convergence.

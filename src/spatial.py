@@ -158,8 +158,8 @@ class Sptl:
     def keig(self, tol=1e-5, maxit=10_000):
         """L0= 1/k F0
         L0^w+1 = 1/k F0^w"""
-        L=self.L
-        F=self.F
+        L = self.L
+        F = self.F
 
         # kL phi = F phi
         # k phi = L^-1 F phi = M phi
@@ -167,59 +167,77 @@ class Sptl:
         # solving with GS:
         # LO = ss.tril(L, format="csr")
         # U = ss.triu(L, k=1, format="csr")
-        lu=ss.linalg.splu(L.tocsc())
+        lu = ss.linalg.splu(L.tocsc())
 
         fi = np.ones(self.L.shape[0])  # initial guess flat
         fi /= np.linalg.norm(fi)  # len 1
 
         k = 1  # initial guess
         for kit in range(maxit):
-            
+
             b = F @ fi
             x = fi.copy()
             # now Lphi = b
             # or LO phi_new = b - U@phi_old
-  
-            x=lu.solve(b)
+
+            x = lu.solve(b)
 
             knew = np.linalg.norm(x)  # technically div by old phi but it is 1
             finew = x / knew
 
-            if kit%100==0:
-                print(f'ITER: {kit}')
-                print(f'K: {knew},    k Diff: {knew-k}')
-                print(f'PHI DIFF: {np.linalg.norm(finew-fi)}')
-            if abs(knew - k)/knew <= tol and np.linalg.norm(finew - fi) <= tol:
-                print(f'OUTERS= {kit}')
-                return knew, finew
+            if kit % 100 == 0:
+                print(f"ITER: {kit}")
+                print(f"K: {knew},    k Diff: {knew-k}")
+                print(f"PHI DIFF: {np.linalg.norm(finew-fi)}")
+            if abs(knew - k) / knew <= tol and np.linalg.norm(finew - fi) <= tol:
+                print(f"OUTERS= {kit}")
+                self.k, self.phi = knew, finew
+                return
             k, fi = knew, finew
         raise RuntimeError("k EIGENVALUE POWER DID NOT CONVERGE")
+
+    def export(self, phi, filename="flux.vti"):
+        import pyvista as pv
+
+        Nx, Ny, Nz = map(int, self.N)
+        n = len(self.active)
+
+        img = pv.ImageData(
+            dimensions=(Nx + 1, Ny + 1, Nz + 1),
+            spacing=tuple(self.grid.h),
+            origin=(0, 0, 0),
+        )
+
+        # Convert your x,z,y ordering into VTK's x,y,z ordering
+        def vtk_order(arr):
+            return arr.reshape(Ny, Nz, Nx).transpose(2, 0, 1).ravel(order="F")
+
+        # Material IDs, including -1 air cells
+        img.cell_data["Material"] = vtk_order(self.grid.mat)
+
+        # Restore each energy group's compressed flux
+        for g in range(self.G):
+            full = np.full(len(self.grid.mat), np.nan)
+            full[self.activeIDX] = phi[g * n : (g + 1) * n]
+
+            img.cell_data[f"Flux Group {g + 1}"] = vtk_order(full)
+
+        img.save("fancy/pv/" + filename)
+        print("VTK saved")
 
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
 # M = np.array([0, 2, 2, 0])
 
-A = np.array(
-    [
-        [0, 0, 0],
-        [0, 1, 0],
-        [1, 1, 0],
-        # [1, 0, 0],
-        # [0, 0, 1],
-        # [0, 1, 1],
-        # [1, 1, 1],
-        # [1, 0, 1],
-    ]
-)
-MMat = np.array(
-    [
-        0,
-        1,
-        0, 
-        # 2, 1, 0, 1, 1
-    ]
-)
-
+A = np.array([
+    [x, y, z]
+    for x in range(-1, 2)
+    for y in range(-1, 2)
+    for z in range(-1, 2)
+])
+# MMat = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+MMat = np.full(len(A), 2)
+MMat[np.all(A == [0, 0, 0], axis=1)] = 0
 # G = Grid((A, MMat))
 # G.subdivide(100, 100, 100)
 
@@ -251,6 +269,8 @@ s.build()
 print(f"Sparse matrix assembly: {perf_counter()-t:.2f} s")
 
 t = perf_counter()
-k, phi = s.keig()
+s.keig()
 print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
-print(f"k_eff: {k:.8f}")
+print(f"k_eff: {s.k:.8f}")
+
+s.export(s.phi)

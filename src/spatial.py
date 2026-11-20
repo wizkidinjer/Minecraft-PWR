@@ -123,8 +123,8 @@ class Sptl:
             ).tocsr()
             # this is how coordinate sparse matrix is build. specify values, their locations, and shape of real matrix
             Bs.append(B)
-        ######################################################
-        ### SCATTERING and FISSION
+            ######################################################
+            ### SCATTERING and FISSION
 
             for h in range(self.G):  # swap out if too slow
                 Ss[g][h] = ss.diags(
@@ -138,21 +138,57 @@ class Sptl:
                 # col h is the fissioned group, the source of the fission, multiplied by flux h so its a column
 
         # print([b.toarray() for b in Bs])
-        B=ss.block_diag(Bs,format='csr')
+        B = ss.block_diag(Bs, format="csr")
         # print(B.toarray())
-        S=ss.bmat(Ss,format='csr')
-        F=ss.bmat(Fs,format='csr')
-        L=B-S
-        print("SSSSSSSSSSSSSSSSSSS")
-        print((S).toarray())
-        print()
-        print('LOSS MATRIX')
-        print(L.toarray())
+        S = ss.bmat(Ss, format="csr")
+        self.F = ss.bmat(Fs, format="csr")
+        self.L = B - S
 
+        for name in ("F", "L"):
+            A = getattr(self, name)
+            memory = A.data.nbytes + A.indices.nbytes + A.indptr.nbytes
 
+            print(f"{name}: {memory / 1024**2:.3f} MB")
+        # print("SSSSSSSSSSSSSSSSSSS")
+        # print((self.S).toarray())
+        # print()
+        # print('LOSS MATRIX')
+        # print(self.L)
 
+    def keig(self, tol=1e-7, maxit=10_000):
+        """L0= 1/k F0
+        L0^w+1 = 1/k F0^w"""
 
-        
+        # kL phi = F phi
+        # k phi = L^-1 F phi = M phi
+
+        # solving with GS:
+        LO = ss.tril(self.L, format="csr")
+        U = ss.triu(self.L, k=1, format="csr")
+
+        fi = np.ones(self.L.shape[0])  # initial guess flat
+        fi /= np.linalg.norm(fi)  # len 1
+
+        k = 1  # initial guess
+
+        for kit in range(maxit):
+            b = self.F @ fi
+            x = fi.copy()
+            # now Lphi = b
+            # or LO phi_new = b - U@phi_old
+            for w in range(maxit):
+                xnew = ss.linalg.spsolve_triangular(LO, b - U @ x)
+                x = xnew
+                if np.linalg.norm(self.L @ xnew - b) / np.linalg.norm(b) <= tol:
+                    # this is relative tol. should be rel to new L@xnew but more expensive slightly
+                    break
+
+            knew = np.linalg.norm(x)  # technically div by old phi but it is 1
+            finew = x / knew
+            if abs(knew - k) <= tol and np.linalg.norm(finew - fi) <= tol:
+                return knew, finew
+            self.k, self.phi = knew, finew
+        raise RuntimeError("k EIGENVALUE POWER ITERATION DID NOT CONVERGE")
 
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
@@ -174,15 +210,41 @@ MMat = np.array(
     [
         0,
         1,
-        # 2, 3, 1, 0, 1, 1
+        # 2, 2, 1, 0, 1, 1
     ]
 )
 
+# G = Grid((A, MMat))
+# G.subdivide(100, 100, 100)
+
+# s = Sptl(G)
+
+# s.matCoef()
+# s.build()
+
+
+# slow analysis
+
+from time import perf_counter
+
+t = perf_counter()
 G = Grid((A, MMat))
-# G.subdivide()
+print(f"Grid initialization: {perf_counter()-t:.2f} s")
 
+t = perf_counter()
+G.subdivide(100, 5, 100)
+print(f"Subdivision: {perf_counter()-t:.2f} s")
+
+t = perf_counter()
 s = Sptl(G)
-# print(s.d(1, 2, 0))
-
 s.matCoef()
-s.leakage()
+print(f"Material coefficients: {perf_counter()-t:.2f} s")
+
+t = perf_counter()
+s.build()
+print(f"Sparse matrix assembly: {perf_counter()-t:.2f} s")
+
+t = perf_counter()
+k, phi = s.keig()
+print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
+print(f"k_eff: {k:.8f}")

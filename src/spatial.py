@@ -43,7 +43,7 @@ class Sptl:
             self.f[mask] = material.f
             self.chi[mask] = material.chi
 
-    def build(self):
+    def build(self,alfa=0):
 
         Nx = self.N[0]
         if len(self.N) == 3:
@@ -100,7 +100,7 @@ class Sptl:
             # ib is the bdry cell and db is the bdry direction. db used just for geometry
             h = hdir[db]
 
-            bc = self.D[ib, g] * Area[db] / (h * (h / 2 + 2.1312 * self.D[ib, g]))
+            bc = self.D[ib, g] * Area[db] / (h / 2 + alfa * self.D[ib, g])
             # given robin bc substituting for D
 
             rows = np.concatenate((i, i, ib))
@@ -155,7 +155,7 @@ class Sptl:
         # print('LOSS MATRIX')
         # print(self.L)
 
-    def keig(self, tol=1e-5, maxit=10_000):
+    def keig(self, tol=1e-10, maxit=10_000):
         """L0= 1/k F0
         L0^w+1 = 1/k F0^w"""
         L = self.L
@@ -225,29 +225,27 @@ class Sptl:
         img.save("fancy/pv/" + filename)
         print("VTK saved")
 
-    def analy(self, phi_n, homomat, alfa=2.1312):
+    def analy(self, phi_n, homomat, alfa=0):
         """verifies the 2d and 3d numerical solver via the analytical
         homogeneou solution using multiplicative block-centered cosines.
 
         verifies numerical k with the buckling of the homogeneous bare core."""
         D = M[homomat].D[0]
 
-        coords = np.indices(self.N.astype(int)).reshape(len(self.N), -1).T
-        coords = coords[self.activeIDX]
-        # coords = coords[:, [2, 0, 1]]  # adjust to your grid ordering
+        coords = self.grid.map[self.activeIDX]
+
         h = self.h
-        L = (np.ptp(coords, axis=0) + 1) * h
+        L = np.ptp(coords, axis=0) * 100 + h
+        x = (coords - coords.min(axis=0)) * 100 + h / 2
 
-        x = (coords - coords.min(axis=0) + 0.5) * h
-
-        B = np.pi / (L + 4.2624 * D)
+        B = np.pi / (L + alfa*2 * D)
 
         exact = np.prod(np.cos(B * (x - L / 2)), axis=1)
         exact /= np.linalg.norm(exact)
 
         N = len(coords)
-        numerical = phi_n[:N]
-        numerical /= np.linalg.norm(numerical)
+        numerical = phi_n[:N] / np.linalg.norm(phi_n[:N])
+        # numerical /= np.linalg.norm(numerical)
 
         error = np.linalg.norm(exact - numerical)
 
@@ -312,8 +310,11 @@ print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
 print(f"k_eff: {s.k:.8f}")
 
 
-Es, hs, Ns = [], [], []
+Es, hs, Ns,orders = [], [], [],[]
+import matplotlib.pyplot as plt
 
+fig, ax = plt.subplots()
+eold=1
 for i in range(8):
     n =  2**i
 
@@ -325,7 +326,43 @@ for i in range(8):
     s.build()
 
     k, phi = s.keig()
+    # Cell-center coordinates in cm
+    coords = G.map[s.activeIDX]
+    x = (coords - coords.min(axis=0)) * 100 + s.h / 2
+
+    # Select middle cross section along x
+    mid = np.array([
+        np.unique(x[:, d])[len(np.unique(x[:, d])) // 2]
+        for d in range(1, x.shape[1])
+    ])
+
+    middle = np.all(np.isclose(x[:, 1:], mid), axis=1)
+
+    order = np.argsort(x[middle, 0])
+    xx = x[middle, 0][order]
+
+    # Numerical group 1 flux
+    flux = phi[:len(s.active)][middle][order]
+    flux /= flux.max()
+
+    ax.plot(xx, flux, "o-", markersize=3, label=f"N={len(s.active)}")
+
+    # Analytical flux along the x-axis
+    D = M[0].D[0]
+    L = np.ptp(coords, axis=0) + G.h
+    L *= 100
+
+    B = np.pi / (L + 0 * D)
+
+    xx_exact = np.linspace(0, L[0], 500)
+    exact = np.cos(B[0] * (xx_exact - L[0] / 2))
+
+    if i == 0:
+        ax.plot(xx_exact, exact, "k--", linewidth=2, label="Analytical")
     e, h, N = s.analy(phi, 0)
+    if i > 0:
+        orders.append(np.log(Es[-1] / e) / np.log(2))
+    eold=e
 
     Es.append(e)
     hs.append(h)
@@ -334,11 +371,17 @@ for i in range(8):
     print(f"N = {N}, h = {h:.5f}, error = {e:.6e}")
 # e,h,N=s.analy(p,0)
 # print(e,h,N)
-
-import matplotlib.pyplot as plt
+print("ORDERS")
+print(orders)
+print()
+ax.set_xlabel("x (cm)")
+ax.set_ylabel("Normalized flux")
+ax.legend()
+ax.grid(True)
+plt.show()
 
 plt.loglog(hs, Es, "o-", label="numerical error")
-plt.loglog(hs, Es[2] * (np.array(hs) / hs[0])**2,
+plt.loglog(hs, Es[-1]*(np.array(hs)/hs[-1])**2,
            "--", label="Second order ref.")
 
 plt.xlabel("h (cm)")

@@ -72,7 +72,7 @@ class Grid:
 
         self.map = map.astype(float)  # helps in subdividing
         self.mat = mat
-        self.N=np.ptp(self.map,axis=0)
+        self.N=np.ptp(self.map,axis=0).astype(int)+1
         self.h=np.array([1,1,1])
         # self.subdivide()
 
@@ -107,7 +107,7 @@ class Grid:
         self.map = map[sort]  # sort xz major
         self.mat = submats[sort]
         self.h = 1 / np.array(self.subdivisions)
-        self.N=np.ptp(self.map,axis=0)*self.subdivisions+1
+        self.N=np.rint(np.ptp(self.map,axis=0)*self.subdivisions).astype(int)+1
         # FIXME should generalize to hx[m] hy[m]  for x y z
 
 

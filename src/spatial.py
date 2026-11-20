@@ -91,6 +91,7 @@ class Sptl:
 
             # bdry
             ib, db = np.where(bdry)
+            # ib is the bdry cell and db is the bdry direction. db used just for geometry
             h = hdir[db]
 
             bc = self.D[ib, g] * Area[db] / (h * (h / 2 + 2.1312 * self.D[ib, g]))
@@ -103,14 +104,20 @@ class Sptl:
             # so at all the i,j slots, the negative fancy D will go in that slot. There are six of these per row i
             # on the diagonals the positives are placed, B_ii = fancy D and on boundary diagonal values the BC goes in.
 
+            # REMOVAL ###
+            m = np.arange(len(self.active))
+            # just make a list of every row/col
+            rows = np.concatenate((rows, m))
+            cols = np.concatenate((cols, m))
+            vals = np.concatenate((vals, self.V * self.rem[:, g]))
+            # just go down the line with precalcualted removals
+
             B = ss.coo_matrix(
                 (vals, (rows, cols)), shape=(len(self.active), len(self.active))
             ).tocsr()
             # this is how coordinate sparse matrix is build. specify values, their locations, and shape of real matrix
             self.Bs.append(B)
         ######################################################
-
-
 
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])

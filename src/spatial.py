@@ -192,7 +192,7 @@ class Sptl:
             if abs(knew - k) / knew <= tol and np.linalg.norm(finew - fi) <= tol:
                 print(f"OUTERS= {kit}")
                 self.k, self.phi = knew, finew
-                return
+                return knew, finew
             k, fi = knew, finew
         raise RuntimeError("k EIGENVALUE POWER DID NOT CONVERGE")
 
@@ -225,19 +225,55 @@ class Sptl:
         img.save("fancy/pv/" + filename)
         print("VTK saved")
 
+    def analy(self, phi_n, homomat, alfa=2.1312):
+        """verifies the 2d and 3d numerical solver via the analytical
+        homogeneou solution using multiplicative block-centered cosines.
 
-# A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
+        verifies numerical k with the buckling of the homogeneous bare core."""
+        D = M[homomat].D[0]
+
+        coords = np.indices(self.N.astype(int)).reshape(len(self.N), -1).T
+        coords = coords[self.activeIDX]
+        # coords = coords[:, [2, 0, 1]]  # adjust to your grid ordering
+        h = self.h
+        L = (np.ptp(coords, axis=0) + 1) * h
+
+        x = (coords - coords.min(axis=0) + 0.5) * h
+
+        B = np.pi / (L + 4.2624 * D)
+
+        exact = np.prod(np.cos(B * (x - L / 2)), axis=1)
+        exact /= np.linalg.norm(exact)
+
+        N = len(coords)
+        numerical = phi_n[:N]
+        numerical /= np.linalg.norm(numerical)
+
+        error = np.linalg.norm(exact - numerical)
+
+        return error, np.max(h), N
+
+
+A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
 # M = np.array([0, 2, 2, 0])
 
-A = np.array([
-    [x, y, z]
-    for x in range(-1, 2)
-    for y in range(-1, 2)
-    for z in range(-1, 2)
-])
-# MMat = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-MMat = np.full(len(A), 2)
-MMat[np.all(A == [0, 0, 0], axis=1)] = 0
+# A = np.array([
+#     [x, y, z]
+#     for x in range(-1, 2)
+#     for y in range(-1, 2)
+#     for z in range(-1, 2)
+# ])
+MMat = np.array(
+    [
+        0,
+        0,
+        0,
+        0,
+        # 0, 0, 0, 0
+    ]
+)
+# MMat = np.full(len(A), 2)
+# MMat[np.all(A == [0, 0, 0], axis=1)] = 0
 # G = Grid((A, MMat))
 # G.subdivide(100, 100, 100)
 
@@ -249,6 +285,8 @@ MMat[np.all(A == [0, 0, 0], axis=1)] = 0
 
 # slow analysis
 
+
+################################## TESTING
 from time import perf_counter
 
 t = perf_counter()
@@ -256,7 +294,7 @@ G = Grid((A, MMat))
 print(f"Grid initialization: {perf_counter()-t:.2f} s")
 
 t = perf_counter()
-G.subdivide(20, 5, 20)
+G.subdivide(5, 5, 5)
 print(f"Subdivision: {perf_counter()-t:.2f} s")
 
 t = perf_counter()
@@ -269,8 +307,42 @@ s.build()
 print(f"Sparse matrix assembly: {perf_counter()-t:.2f} s")
 
 t = perf_counter()
-s.keig()
+k, p = s.keig()
 print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
 print(f"k_eff: {s.k:.8f}")
 
-s.export(s.phi)
+
+Es, hs, Ns = [], [], []
+
+for i in range(8):
+    n =  2**i
+
+    G = Grid((A, MMat))
+    G.subdivide(*([n] * A.shape[1]))
+
+    s = Sptl(G)
+    s.matCoef()
+    s.build()
+
+    k, phi = s.keig()
+    e, h, N = s.analy(phi, 0)
+
+    Es.append(e)
+    hs.append(h)
+    Ns.append(N)
+
+    print(f"N = {N}, h = {h:.5f}, error = {e:.6e}")
+# e,h,N=s.analy(p,0)
+# print(e,h,N)
+
+import matplotlib.pyplot as plt
+
+plt.loglog(hs, Es, "o-", label="numerical error")
+plt.loglog(hs, Es[2] * (np.array(hs) / hs[0])**2,
+           "--", label="Second order ref.")
+
+plt.xlabel("h (cm)")
+plt.ylabel("L2 error")
+plt.legend()
+plt.grid(True)
+plt.show()

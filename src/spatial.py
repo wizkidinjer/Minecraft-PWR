@@ -155,7 +155,7 @@ class Sptl:
         # print('LOSS MATRIX')
         # print(self.L)
 
-    def keig(self, tol=1e-7, maxit=10_000):
+    def keig(self, tol=1e-5, maxit=10_000):
         """L0= 1/k F0
         L0^w+1 = 1/k F0^w"""
         L=self.L
@@ -165,39 +165,31 @@ class Sptl:
         # k phi = L^-1 F phi = M phi
 
         # solving with GS:
-        LO = ss.tril(L, format="csr")
-        U = ss.triu(L, k=1, format="csr")
+        # LO = ss.tril(L, format="csr")
+        # U = ss.triu(L, k=1, format="csr")
+        lu=ss.linalg.splu(L.tocsc())
 
         fi = np.ones(self.L.shape[0])  # initial guess flat
         fi /= np.linalg.norm(fi)  # len 1
 
         k = 1  # initial guess
-        gs_its=0
         for kit in range(maxit):
             
             b = F @ fi
             x = fi.copy()
             # now Lphi = b
             # or LO phi_new = b - U@phi_old
-            for w in range(maxit):
-                xnew = ss.linalg.spsolve_triangular(LO, b - U @ x)
-                x = xnew
-                gs_its+=1
-                if np.linalg.norm(L @ xnew - b) / np.linalg.norm(b) <= tol:
-                    # this is relative tol. should be rel to new L@xnew but more expensive slightly
-                    break
-
-            
-            
+  
+            x=lu.solve(b)
 
             knew = np.linalg.norm(x)  # technically div by old phi but it is 1
             finew = x / knew
+
             if kit%100==0:
-                print(knew)
-                print(np.linalg.norm(finew-fi))
-                print(f'outer: {kit+1}, inner GS: {w}')
-            
-            if abs(knew - k) <= tol and np.linalg.norm(finew - fi) <= tol:
+                print(f'ITER: {kit}')
+                print(f'K: {knew},    k Diff: {knew-k}')
+                print(f'PHI DIFF: {np.linalg.norm(finew-fi)}')
+            if abs(knew - k)/knew <= tol and np.linalg.norm(finew - fi) <= tol:
                 print(f'OUTERS= {kit}')
                 return knew, finew
             k, fi = knew, finew
@@ -222,7 +214,7 @@ A = np.array(
 MMat = np.array(
     [
         0,
-        0,
+        1,
         0, 
         # 2, 1, 0, 1, 1
     ]

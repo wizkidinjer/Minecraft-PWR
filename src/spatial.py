@@ -43,7 +43,7 @@ class Sptl:
             self.f[mask] = material.f
             self.chi[mask] = material.chi
 
-    def leakage(self):
+    def build(self):
 
         Nx = self.N[0]
         if len(self.N) == 3:
@@ -72,10 +72,16 @@ class Sptl:
         hdir = np.repeat(self.h, 2)
         Area = self.V / hdir
         # returns area based on which face direction you are lookings
-        self.Bs = []  # B matrix for each group
+
+        Bs = []  # B matrix for each group
+        Ss = [[None for k in range(self.G)] for l in range(self.G)]
+        # i want to make this generalized instead of hardcoding it.o
+        # only 0,1 and 1,0 are used in a 2 group case and theres no upscatter
+        # so really only 1,0 here
+        Fs = [[None for k in range(self.G)] for l in range(self.G)]
 
         ##################################### BUILDING B
-        for g in range(1):
+        for g in range(self.G):
             rows, cols, vals = [], [], []
 
             i, d = np.where(interior)
@@ -116,8 +122,37 @@ class Sptl:
                 (vals, (rows, cols)), shape=(len(self.active), len(self.active))
             ).tocsr()
             # this is how coordinate sparse matrix is build. specify values, their locations, and shape of real matrix
-            self.Bs.append(B)
+            Bs.append(B)
         ######################################################
+        ### SCATTERING and FISSION
+
+            for h in range(self.G):  # swap out if too slow
+                Ss[g][h] = ss.diags(
+                    self.V * self.s[:, h, g]
+                ).tocsr()  # s is [cell, from, to]
+                # and g is to, row landing in
+                # i dont think i have to deal with h==g because they are set to zero in mats.py
+            for h in range(self.G):
+                Fs[g][h] = ss.diags(self.chi[:, g] * self.V * self.f[:, h]).tocsr()
+                # Fs[g][h] means row g col h. row g is the neutron source, so chi is for g.
+                # col h is the fissioned group, the source of the fission, multiplied by flux h so its a column
+
+        # print([b.toarray() for b in Bs])
+        B=ss.block_diag(Bs,format='csr')
+        # print(B.toarray())
+        S=ss.bmat(Ss,format='csr')
+        F=ss.bmat(Fs,format='csr')
+        L=B-S
+        print("SSSSSSSSSSSSSSSSSSS")
+        print((S).toarray())
+        print()
+        print('LOSS MATRIX')
+        print(L.toarray())
+
+
+
+
+        
 
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])

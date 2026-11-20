@@ -158,37 +158,50 @@ class Sptl:
     def keig(self, tol=1e-7, maxit=10_000):
         """L0= 1/k F0
         L0^w+1 = 1/k F0^w"""
+        L=self.L
+        F=self.F
 
         # kL phi = F phi
         # k phi = L^-1 F phi = M phi
 
         # solving with GS:
-        LO = ss.tril(self.L, format="csr")
-        U = ss.triu(self.L, k=1, format="csr")
+        LO = ss.tril(L, format="csr")
+        U = ss.triu(L, k=1, format="csr")
 
         fi = np.ones(self.L.shape[0])  # initial guess flat
         fi /= np.linalg.norm(fi)  # len 1
 
         k = 1  # initial guess
-
+        gs_its=0
         for kit in range(maxit):
-            b = self.F @ fi
+            
+            b = F @ fi
             x = fi.copy()
             # now Lphi = b
             # or LO phi_new = b - U@phi_old
             for w in range(maxit):
                 xnew = ss.linalg.spsolve_triangular(LO, b - U @ x)
                 x = xnew
-                if np.linalg.norm(self.L @ xnew - b) / np.linalg.norm(b) <= tol:
+                gs_its+=1
+                if np.linalg.norm(L @ xnew - b) / np.linalg.norm(b) <= tol:
                     # this is relative tol. should be rel to new L@xnew but more expensive slightly
                     break
 
+            
+            
+
             knew = np.linalg.norm(x)  # technically div by old phi but it is 1
             finew = x / knew
+            if kit%100==0:
+                print(knew)
+                print(np.linalg.norm(finew-fi))
+                print(f'outer: {kit+1}, inner GS: {w}')
+            
             if abs(knew - k) <= tol and np.linalg.norm(finew - fi) <= tol:
+                print(f'OUTERS= {kit}')
                 return knew, finew
-            self.k, self.phi = knew, finew
-        raise RuntimeError("k EIGENVALUE POWER ITERATION DID NOT CONVERGE")
+            k, fi = knew, finew
+        raise RuntimeError("k EIGENVALUE POWER DID NOT CONVERGE")
 
 
 # A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
@@ -198,7 +211,7 @@ A = np.array(
     [
         [0, 0, 0],
         [0, 1, 0],
-        # [1, 1, 0],
+        [1, 1, 0],
         # [1, 0, 0],
         # [0, 0, 1],
         # [0, 1, 1],
@@ -209,8 +222,9 @@ A = np.array(
 MMat = np.array(
     [
         0,
-        1,
-        # 2, 2, 1, 0, 1, 1
+        0,
+        0, 
+        # 2, 1, 0, 1, 1
     ]
 )
 
@@ -232,7 +246,7 @@ G = Grid((A, MMat))
 print(f"Grid initialization: {perf_counter()-t:.2f} s")
 
 t = perf_counter()
-G.subdivide(100, 5, 100)
+G.subdivide(20, 5, 20)
 print(f"Subdivision: {perf_counter()-t:.2f} s")
 
 t = perf_counter()

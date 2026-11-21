@@ -10,7 +10,7 @@
 
 ---
 <p align="center">
-  <img src="fancy/pv3d2.png" alt="MCCORE" width="750">
+  <img src="visuals/pv3d2.png" alt="MCCORE" width="750">
 
 </p>
 

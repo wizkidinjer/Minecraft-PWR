@@ -42,8 +42,10 @@ class Transient:
 
     def evDecomp(self, times, phi0, k=6):
         from scipy.sparse.linalg import eigs
-        lam, ev = eigs(self.spatial.F - self.spatial.L, k=k,
-                    M=self.invv, sigma=0.0, which='LM')
+
+        lam, ev = eigs(
+            self.spatial.F - self.spatial.L, k=k, M=self.invv, sigma=0.0, which="LM"
+        )
         c = np.linalg.lstsq(ev, phi0, rcond=None)[0]
 
         print("Eigenvector matrix shape:", ev.shape)
@@ -54,23 +56,19 @@ class Transient:
 
         print(
             "Reconstruction error:",
-            np.linalg.norm(reconstructed - phi0) / np.linalg.norm(phi0)
+            np.linalg.norm(reconstructed - phi0) / np.linalg.norm(phi0),
         )
         return ((np.exp(np.outer(times, lam)) * c) @ ev.T).real
         # evdecomp gives phi= Ve^lam*t V^-1 phio
-        
-        
 
-
-
-
-    
 
 import scipy.linalg as sl
 
-T = 1.024e-3                                   # divisible by every dt = 1e-6 * 2**i
+T = 1.024e-3  # divisible by every dt = 1e-6 * 2**i
 Mdiag = s.V * np.repeat(1 / np.array([1.4e9, 2.2e5]), len(s.active))
-A = (ss.diags(1 / Mdiag) @ (s.F - s.L)).toarray()   # s_invv_diag = Transient(s, 1).invv.diagonal()
+A = (
+    ss.diags(1 / Mdiag) @ (s.F - s.L)
+).toarray()  # s_invv_diag = Transient(s, 1).invv.diagonal()
 exact = sl.expm(A * T) @ s.phi
 
 dts, errs = [], []
@@ -89,30 +87,56 @@ plt.figure()
 plt.loglog(dts, errs, "o-", label="Backward Euler error")
 plt.loglog(dts, errs[-1] * np.array(dts) / dts[-1], "k--", label="first order")
 plt.xlabel("Time step (s)")
-plt.ylabel("Relative L2 error")
-plt.title("Temporal Convergence")
-plt.grid(True, which="both", alpha=0.4)
+plt.ylabel("Rel. L2 error")
+plt.title("Backward Euler Convergence [1st Order]")
+plt.grid(
+    True,
+    which="both",
+)
 plt.legend()
+plt.savefig("fancy/BEConvergence.png", dpi=300)
 plt.show()
 
+print(dts[1])
+
+n = 250
+dt = dts[1]
+times = dt * np.arange(n)
+
+# bE
+Tr = Transient(s, dt)
+Tr.phi = s.phi.copy()
+Tr.prep()
+be = np.empty((n, len(s.phi)))
+be[0] = Tr.phi
+for i in range(1, n):
+    be[i] = Tr.step()
+
+# exact
+E = sl.expm(A * dt)
+ex = np.empty_like(be)
+ex[0] = s.phi
+for i in range(1, n):
+    ex[i] = E @ ex[i - 1]
+
 # fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+plt.plot(times, be.sum(1) / be[0].sum(), "-", label="Backward Euler")
+plt.plot(times, ex.sum(1) / ex[0].sum(), "--", label="Exact")
+plt.xlabel("Time (s)")
+plt.ylabel("Total flux / initial")
+plt.title(f"BE Transient k = {s.k:.6f}")
+plt.legend()
+plt.grid()
 
-# ax[0].plot(times, numerical / numerical[0], label="Backward Euler")
-# ax[0].plot(times, analytical / analytical[0], "--", label="Analytical")
-
-# ax[1].plot(times, error)
-
-# ax[0].set(xlabel="Time (s)", ylabel="Relative flux")
+# err = np.linalg.norm(be - ex, axis=1) / np.linalg.norm(ex, axis=1)
+# ax[1].plot(times, err)
 # ax[1].set(xlabel="Time (s)", ylabel="Relative L2 error")
+# ax[1].grid()
 
-# for a in ax:
-#     a.grid()
-#     a.legend() if a is ax[0] else None
-
-# plt.tight_layout()
-# plt.show()
-
-
+print(s.k)
+plt.tight_layout()
+plt.savefig("fancy/BEtransient.png", dpi=500)
+plt.show()
 
 
 # plt.plot(times, tFlux / tFlux[0])

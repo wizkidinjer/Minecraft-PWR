@@ -579,14 +579,14 @@ The current export writes to the `fancy/pv/` directory relative to the program's
 - [x] Implement boundary-condition treatment.
 - [x] Assemble the cell-centered finite-volume diffusion operators.
 - [x] Implement the coupled two-group steady-state solver.
-- [ ] Verify the numerical methods against analytical and benchmark solutions.
+- [x] Verify the numerical methods against analytical and benchmark solutions.
 - [x] Implement eigenvalue calculations for \(k\).
 - [ ] Add delayed neutron precursor groups.
-- [ ] Implement backward Euler transient integration.
-- [ ] Verify Transient solution convergence.
+- [x] Implement backward Euler transient integration.
+- [x] Verify Transient solution convergence.
 - [ ] Develop Minecraft block-face and control rod interfaces.
 - [ ] Integrate reactor state updates with Minecraft simulation ticks.
-- [ ] Export spatial neutron flux and power distributions to ParaView.
+- [x] Export spatial neutron flux and power distributions to ParaView.
 
 Items marked complete refer to initial implementations and may require additional testing and refinement.
 

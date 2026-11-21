@@ -7,6 +7,7 @@ from grid import Grid
 from mats import M
 import numpy as np
 import scipy.sparse as ss
+import matplotlib.pyplot as plt
 
 
 class Sptl:
@@ -43,7 +44,8 @@ class Sptl:
             self.f[mask] = material.f
             self.chi[mask] = material.chi
 
-    def build(self,alfa=0):
+    def build(self, alfa=0):
+        self.matCoef()
 
         Nx = self.N[0]
         if len(self.N) == 3:
@@ -144,16 +146,12 @@ class Sptl:
         self.F = ss.bmat(Fs, format="csr")
         self.L = B - S
 
-        for name in ("F", "L"):
-            A = getattr(self, name)
-            memory = A.data.nbytes + A.indices.nbytes + A.indptr.nbytes
+        # for name in ("F", "L"):
+        #     A = getattr(self, name)
+        #     memory = A.data.nbytes + A.indices.nbytes + A.indptr.nbytes
 
-            print(f"{name}: {memory / 1024**2:.3f} MB")
-        # print("SSSSSSSSSSSSSSSSSSS")
-        # print((self.S).toarray())
-        # print()
-        # print('LOSS MATRIX')
-        # print(self.L)
+        #     print(f"{name}: {memory / 1024**2:.3f} MB")
+
 
     def keig(self, tol=1e-10, maxit=10_000):
         """L0= 1/k F0
@@ -185,12 +183,12 @@ class Sptl:
             knew = np.linalg.norm(x)  # technically div by old phi but it is 1
             finew = x / knew
 
-            if kit % 100 == 0:
-                print(f"ITER: {kit}")
-                print(f"K: {knew},    k Diff: {knew-k}")
-                print(f"PHI DIFF: {np.linalg.norm(finew-fi)}")
+            # if kit % 100 == 0:
+            #     print(f"ITER: {kit}")
+            #     print(f"K: {knew},    k Diff: {knew-k}")
+            #     print(f"PHI DIFF: {np.linalg.norm(finew-fi)}")
             if abs(knew - k) / knew <= tol and np.linalg.norm(finew - fi) <= tol:
-                print(f"OUTERS= {kit}")
+                # print(f"OUTERS= {kit}")
                 self.k, self.phi = knew, finew
                 return knew, finew
             k, fi = knew, finew
@@ -238,7 +236,7 @@ class Sptl:
         L = np.ptp(coords, axis=0) * 100 + h
         x = (coords - coords.min(axis=0)) * 100 + h / 2
 
-        B = np.pi / (L + alfa*2 * D)
+        B = np.pi / (L + alfa * 2 * D)
 
         exact = np.prod(np.cos(B * (x - L / 2)), axis=1)
         exact /= np.linalg.norm(exact)
@@ -252,140 +250,117 @@ class Sptl:
         return error, np.max(h), N
 
 
-A = np.array([[0, 1], [1, 1], [0, 0], [1, 0]])
-# M = np.array([0, 2, 2, 0])
+A = np.array([[0, 1,0], [1, 1,0], [0, 0,0], [1, 0,0],[0, 1,1], [1, 1,1], [0, 0,1], [1, 0,1]])
 
-# A = np.array([
-#     [x, y, z]
-#     for x in range(-1, 2)
-#     for y in range(-1, 2)
-#     for z in range(-1, 2)
-# ])
-MMat = np.array(
-    [
-        0,
-        0,
-        0,
-        0,
-        # 0, 0, 0, 0
-    ]
-)
-# MMat = np.full(len(A), 2)
-# MMat[np.all(A == [0, 0, 0], axis=1)] = 0
-# G = Grid((A, MMat))
-# G.subdivide(100, 100, 100)
+MMat = np.array([0, 0, 0, 0,0,0,0,0])
 
-# s = Sptl(G)
+G = Grid((A, MMat))
+G.subdivide(4,2,4)
+s=Sptl(G)
+s.build()
+print('build done')
+s.keig()
+print('keig done')
 
-# s.matCoef()
-# s.build()
-
-
-# slow analysis
 
 
 ################################## TESTING
-from time import perf_counter
+# from time import perf_counter
 
-t = perf_counter()
-G = Grid((A, MMat))
-print(f"Grid initialization: {perf_counter()-t:.2f} s")
+# t = perf_counter()
+# G = Grid((A, MMat))
+# print(f"Grid initialization: {perf_counter()-t:.2f} s")
 
-t = perf_counter()
-G.subdivide(5, 5, 5)
-print(f"Subdivision: {perf_counter()-t:.2f} s")
+# t = perf_counter()
+# G.subdivide(5, 5, 5)
+# print(f"Subdivision: {perf_counter()-t:.2f} s")
 
-t = perf_counter()
-s = Sptl(G)
-s.matCoef()
-print(f"Material coefficients: {perf_counter()-t:.2f} s")
+# t = perf_counter()
+# s = Sptl(G)
+# s.matCoef()
+# print(f"Material coefficients: {perf_counter()-t:.2f} s")
 
-t = perf_counter()
-s.build()
-print(f"Sparse matrix assembly: {perf_counter()-t:.2f} s")
+# t = perf_counter()
+# s.build()
+# print(f"Sparse matrix assembly: {perf_counter()-t:.2f} s")
 
-t = perf_counter()
-k, p = s.keig()
-print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
-print(f"k_eff: {s.k:.8f}")
+# t = perf_counter()
+# k, p = s.keig()
+# print(f"k-eigenvalue solve: {perf_counter()-t:.2f} s")
+# print(f"k_eff: {s.k:.8f}")
 
 
-Es, hs, Ns,orders = [], [], [],[]
-import matplotlib.pyplot as plt
 
-fig, ax = plt.subplots()
-eold=1
-for i in range(8):
-    n =  2**i
 
+
+
+
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt, scipy.sparse.linalg as ssl, contextlib, io
+
+A=np.array([[0,0],[0,1],[1,0],[1,1]])
+MMat=np.array([0,0,0,0])
+
+A = np.array([[0, 1,0], [1, 1,0], [0, 0,0], [1, 0,0],[0, 1,1], [1, 1,1], [0, 0,1], [1, 0,1]])
+
+MMat = np.array([0, 0, 0, 0,0,0,0,0])
+# exact bare-box solution: phi_g = c_g * prod sin(pi x_d / L_d), zero flux on faces
+f, dim = M[0], A.shape[1]
+Lc = (np.ptp(A, axis=0) + 1) * 100.0                     # box width per direction (cm)
+B2 = np.sum((np.pi / Lc) ** 2)                           # geometric buckling
+c21 = f.s[0][1] / (f.a[1] + f.D[1] * B2)                 # thermal/fast flux ratio
+k_ex = f.f[1] * c21 / (f.rem[0] + f.D[0] * B2)           # exact k
+
+hs, ephi, ek = [], [], []
+fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+for n in [2**i for i in range( 4)]:                    # use range(1, 4) in 3D
     G = Grid((A, MMat))
-    G.subdivide(*([n] * A.shape[1]))
-
+    G.subdivide(*[n] * dim)
     s = Sptl(G)
     s.matCoef()
-    s.build()
+    with contextlib.redirect_stdout(io.StringIO()):
+        s.build(0)                                       # zero flux on faces
+        k, _ = s.keig(tol=1e-12)
 
-    k, phi = s.keig()
-    # Cell-center coordinates in cm
-    coords = G.map[s.activeIDX]
-    x = (coords - coords.min(axis=0)) * 100 + s.h / 2
+    nc = len(s.active)
+    xc = (G.map[s.activeIDX] - G.map[s.activeIDX].min(0)) * 100 + s.h / 2   # cell centers (cm)
+    S = np.prod(np.sin(np.pi * xc / Lc), axis=1)         # product of cosines about the box center
+    ex = np.concatenate((S, c21 * S))
 
-    # Select middle cross section along x
-    mid = np.array([
-        np.unique(x[:, d])[len(np.unique(x[:, d])) // 2]
-        for d in range(1, x.shape[1])
-    ])
+    Q = np.concatenate(((f.D[0] * B2 + f.rem[0]) * S, np.zeros(nc)))
+    phi = ssl.spsolve(s.L.tocsc(), s.V * Q)
 
-    middle = np.all(np.isclose(x[:, 1:], mid), axis=1)
+    hs.append(s.h.max())
+    ephi.append(np.linalg.norm(phi - ex) / np.linalg.norm(ex))
+    ek.append(abs(k - k_ex))
+    p = lambda e: f"{np.log2(e[-2] / e[-1]):6.3f}" if len(e) > 1 else "   -  "
+    print(f"n={n:3d} h={hs[-1]:7.3f}  phi err={ephi[-1]:.3e} p={p(ephi)}  |  k={k:.8f} err={ek[-1]:.3e} p={p(ek)}")
 
-    order = np.argsort(x[middle, 0])
-    xx = x[middle, 0][order]
+    if n <= 8:  # centerline profile
+        mid = [np.unique(xc[:, d])[len(np.unique(xc[:, d])) // 2] for d in range(1, dim)]
+        row = np.where(np.all(np.isclose(xc[:, 1:], mid), axis=1))[0]
+        row = row[np.argsort(xc[row, 0])]
+        ax.plot(xc[row, 0], phi[row] / np.prod(np.sin(np.pi * np.array(mid) / Lc[1:])), "o", ms=4, label=f"n={n}")
 
-    # Numerical group 1 flux
-    flux = phi[:len(s.active)][middle][order]
-    flux /= flux.max()
+xf = np.linspace(0, Lc[0], 400)
+ax.plot(xf, np.sin(np.pi * xf / Lc[0]), "k--", lw=1.2, label="exact")
+ax.set(xlabel="x (cm)", ylabel="Flux along yz centerline", title=f"3D Bare homogeneous, k = {k_ex:.6f}")
+ax.legend(); ax.grid(True)
 
-    ax.plot(xx, flux, "o-", markersize=3, label=f"N={len(s.active)}")
-
-    # Analytical flux along the x-axis
-    D = M[0].D[0]
-    L = np.ptp(coords, axis=0) + G.h
-    L *= 100
-
-    B = np.pi / (L + 0 * D)
-
-    xx_exact = np.linspace(0, L[0], 500)
-    exact = np.cos(B[0] * (xx_exact - L[0] / 2))
-
-    if i == 0:
-        ax.plot(xx_exact, exact, "k--", linewidth=2, label="Analytical")
-    e, h, N = s.analy(phi, 0)
-    if i > 0:
-        orders.append(np.log(Es[-1] / e) / np.log(2))
-    eold=e
-
-    Es.append(e)
-    hs.append(h)
-    Ns.append(N)
-
-    print(f"N = {N}, h = {h:.5f}, error = {e:.6e}")
-# e,h,N=s.analy(p,0)
-# print(e,h,N)
-print("ORDERS")
-print(orders)
-print()
-ax.set_xlabel("x (cm)")
-ax.set_ylabel("Normalized flux")
-ax.legend()
-ax.grid(True)
-plt.show()
-
-plt.loglog(hs, Es, "o-", label="numerical error")
-plt.loglog(hs, Es[-1]*(np.array(hs)/hs[-1])**2,
-           "--", label="Second order ref.")
-
-plt.xlabel("h (cm)")
-plt.ylabel("L2 error")
-plt.legend()
-plt.grid(True)
+hs = np.array(hs)
+ax2.loglog(hs, ephi, "o-", label="Flux")
+ax2.loglog(hs, ek, "s-", label="k")
+for e in (ephi, ek):
+    ax2.loglog(hs, e[-1] * (hs / hs[-1]) ** 2, "k--", lw=0.8,label='2 order')
+ax2.set(xlabel="h (cm)", ylabel="error", title="Convergence [2nd order]")
+ax2.legend(); ax2.grid(True, which="both",)
+fig.tight_layout()
+plt.savefig('fancy/3dSpatialConvergence.png',dpi=400)
 plt.show()

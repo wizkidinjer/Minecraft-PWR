@@ -18,7 +18,7 @@
 
 ## Overview
 
-**Minecraft-PWR** is an experimental three-dimensional reactor physics simulation framework designed to model a pressurized water reactor (PWR) constructed within Minecraft.
+**Minecraft-PWR** is a three-dimensional reactor physics simulation framework designed to model a pressurized water reactor (PWR) constructed within Minecraft.
 
 The project aims to translate Minecraft block coordinates and material assignments into a numerical representation suitable for solving the time-dependent multigroup neutron diffusion equations. The resulting framework is intended to support spatial neutron flux calculations, delayed neutron precursor dynamics, and transient reactor behavior.
 
@@ -53,12 +53,12 @@ Minecraft-PWR/
 ├── src/
 │   ├── grid.py          # Geometry, indexing, subdivision, export
 │   └── mats.py          # Nuclear materials and cross sections
-│   └── spatial.py
-│   └── trans.py
-│   └── intake.py
+│   └── spatial.py       # Spatial discretization multigroup CC FVM
+│   └── transient.py     # Backward Euler time stepper
+│   └── intake.py        # Intakes information about the world and core for grid.py
 │   
 ├── docs/                # Documentation and benchmark references
-├── fancy/               # Visualization and generated output assets
+├── visuals/             # Visualization and generated output assets
 └── README.md
 ```
 <!-- 
@@ -515,8 +515,10 @@ The current geometry and export components use:
 - Python 3
 - NumPy
 - PyVista
-- Matplotlib (imported by the current grid module)
-
+- Matplotlib
+- Scipy
+- Sympy
+<!-- 
 Install the dependencies:
 
 ```bash
@@ -566,9 +568,9 @@ After opening the dataset and clicking **Apply**:
 
 The current export writes to the `fancy/pv/` directory relative to the program's working directory.
 
----
+--- -->
 
-## 5. Development Roadmap
+## Development Roadmap
 
 - [x] Define two-group nuclear material data structures.
 - [x] Implement 2D and 3D block-coordinate input.
@@ -592,7 +594,7 @@ Items marked complete refer to initial implementations and may require additiona
 
 ---
 
-## 6. Benchmark and Verification
+## Benchmark and Verification
 
 The intended reactor physics reference is the IAEA two-group PWR benchmark, with cross-section data and configurations drawn from the benchmark literature available in the repository.
 

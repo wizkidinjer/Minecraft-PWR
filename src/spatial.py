@@ -152,7 +152,6 @@ class Sptl:
 
         #     print(f"{name}: {memory / 1024**2:.3f} MB")
 
-
     def keig(self, tol=1e-10, maxit=10_000):
         """L0= 1/k F0
         L0^w+1 = 1/k F0^w"""
@@ -250,18 +249,28 @@ class Sptl:
         return error, np.max(h), N
 
 
-A = np.array([[0, 1,0], [1, 1,0], [0, 0,0], [1, 0,0],[0, 1,1], [1, 1,1], [0, 0,1], [1, 0,1]])
+A = np.array(
+    [
+        [0, 1, 0],
+        [1, 1, 0],
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 1],
+        [1, 1, 1],
+        [0, 0, 1],
+        [1, 0, 1],
+    ]
+)
 
-MMat = np.array([0, 0, 0, 0,0,0,0,0])
+MMat = np.array([0, 0, 0, 0, 0, 0, 0, 0])
 
 G = Grid((A, MMat))
-G.subdivide(4,2,4)
-s=Sptl(G)
+G.subdivide(4, 2, 4)
+s = Sptl(G)
 s.build()
-print('build done')
+print("build done")
 s.keig()
-print('keig done')
-
+print("keig done")
 
 
 ################################## TESTING
@@ -290,48 +299,50 @@ print('keig done')
 # print(f"k_eff: {s.k:.8f}")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 import matplotlib.pyplot as plt, scipy.sparse.linalg as ssl, contextlib, io
 
-A=np.array([[0,0],[0,1],[1,0],[1,1]])
-MMat=np.array([0,0,0,0])
+A = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+MMat = np.array([0, 0, 0, 0])
 
-A = np.array([[0, 1,0], [1, 1,0], [0, 0,0], [1, 0,0],[0, 1,1], [1, 1,1], [0, 0,1], [1, 0,1]])
+A = np.array(
+    [
+        [0, 1, 0],
+        [1, 1, 0],
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 1],
+        [1, 1, 1],
+        [0, 0, 1],
+        [1, 0, 1],
+    ]
+)
 
-MMat = np.array([0, 0, 0, 0,0,0,0,0])
+MMat = np.array([0, 0, 0, 0, 0, 0, 0, 0])
 # exact bare-box solution: phi_g = c_g * prod sin(pi x_d / L_d), zero flux on faces
 f, dim = M[0], A.shape[1]
-Lc = (np.ptp(A, axis=0) + 1) * 100.0                     # box width per direction (cm)
-B2 = np.sum((np.pi / Lc) ** 2)                           # geometric buckling
-c21 = f.s[0][1] / (f.a[1] + f.D[1] * B2)                 # thermal/fast flux ratio
-k_ex = f.f[1] * c21 / (f.rem[0] + f.D[0] * B2)           # exact k
+Lc = (np.ptp(A, axis=0) + 1) * 100.0  # box width per direction (cm)
+B2 = np.sum((np.pi / Lc) ** 2)  # geometric buckling
+c21 = f.s[0][1] / (f.a[1] + f.D[1] * B2)  # thermal/fast flux ratio
+k_ex = f.f[1] * c21 / (f.rem[0] + f.D[0] * B2)  # exact k
 
 hs, ephi, ek = [], [], []
 fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
-for n in [2**i for i in range( 4)]:                    # use range(1, 4) in 3D
+for n in [2**i for i in range(4)]:  # use range(1, 4) in 3D
     G = Grid((A, MMat))
     G.subdivide(*[n] * dim)
     s = Sptl(G)
     s.matCoef()
     with contextlib.redirect_stdout(io.StringIO()):
-        s.build(0)                                       # zero flux on faces
+        s.build(0)  # zero flux on faces
         k, _ = s.keig(tol=1e-12)
 
     nc = len(s.active)
-    xc = (G.map[s.activeIDX] - G.map[s.activeIDX].min(0)) * 100 + s.h / 2   # cell centers (cm)
-    S = np.prod(np.sin(np.pi * xc / Lc), axis=1)         # product of cosines about the box center
+    xc = (
+        G.map[s.activeIDX] - G.map[s.activeIDX].min(0)
+    ) * 100 + s.h / 2  # cell centers (cm)
+    S = np.prod(
+        np.sin(np.pi * xc / Lc), axis=1
+    )  # product of cosines about the box center
     ex = np.concatenate((S, c21 * S))
 
     Q = np.concatenate(((f.D[0] * B2 + f.rem[0]) * S, np.zeros(nc)))
@@ -341,26 +352,45 @@ for n in [2**i for i in range( 4)]:                    # use range(1, 4) in 3D
     ephi.append(np.linalg.norm(phi - ex) / np.linalg.norm(ex))
     ek.append(abs(k - k_ex))
     p = lambda e: f"{np.log2(e[-2] / e[-1]):6.3f}" if len(e) > 1 else "   -  "
-    print(f"n={n:3d} h={hs[-1]:7.3f}  phi err={ephi[-1]:.3e} p={p(ephi)}  |  k={k:.8f} err={ek[-1]:.3e} p={p(ek)}")
+    print(
+        f"n={n:3d} h={hs[-1]:7.3f}  phi err={ephi[-1]:.3e} p={p(ephi)}  |  k={k:.8f} err={ek[-1]:.3e} p={p(ek)}"
+    )
 
     if n <= 8:  # centerline profile
-        mid = [np.unique(xc[:, d])[len(np.unique(xc[:, d])) // 2] for d in range(1, dim)]
+        mid = [
+            np.unique(xc[:, d])[len(np.unique(xc[:, d])) // 2] for d in range(1, dim)
+        ]
         row = np.where(np.all(np.isclose(xc[:, 1:], mid), axis=1))[0]
         row = row[np.argsort(xc[row, 0])]
-        ax.plot(xc[row, 0], phi[row] / np.prod(np.sin(np.pi * np.array(mid) / Lc[1:])), "o", ms=4, label=f"n={n}")
+        ax.plot(
+            xc[row, 0],
+            phi[row] / np.prod(np.sin(np.pi * np.array(mid) / Lc[1:])),
+            "o",
+            ms=4,
+            label=f"n={n}",
+        )
 
 xf = np.linspace(0, Lc[0], 400)
 ax.plot(xf, np.sin(np.pi * xf / Lc[0]), "k--", lw=1.2, label="exact")
-ax.set(xlabel="x (cm)", ylabel="Flux along yz centerline", title=f"3D Bare homogeneous, k = {k_ex:.6f}")
-ax.legend(); ax.grid(True)
+ax.set(
+    xlabel="x (cm)",
+    ylabel="Flux along yz centerline",
+    title=f"3D Bare homogeneous, k = {k_ex:.6f}",
+)
+ax.legend()
+ax.grid(True)
 
 hs = np.array(hs)
 ax2.loglog(hs, ephi, "o-", label="Flux")
 ax2.loglog(hs, ek, "s-", label="k")
 for e in (ephi, ek):
-    ax2.loglog(hs, e[-1] * (hs / hs[-1]) ** 2, "k--", lw=0.8,label='2 order')
+    ax2.loglog(hs, e[-1] * (hs / hs[-1]) ** 2, "k--", lw=0.8, label="2 order")
 ax2.set(xlabel="h (cm)", ylabel="error", title="Convergence [2nd order]")
-ax2.legend(); ax2.grid(True, which="both",)
+ax2.legend()
+ax2.grid(
+    True,
+    which="both",
+)
 fig.tight_layout()
-plt.savefig('fancy/3dSpatialConvergence.png',dpi=400)
+plt.savefig("fancy/3dSpatialConvergence.png", dpi=400)
 plt.show()

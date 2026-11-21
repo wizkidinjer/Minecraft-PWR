@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<VTKFile type="ImageData" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <ImageData WholeExtent="0 20 0 20 0 20" Origin="-1 -1 -1" Spacing="0.2 0.2 0.2" Direction="1 0 0 0 1 0 0 0 1">
+  <Piece Extent="0 20 0 20 0 20">
+    <PointData>
+    </PointData>
+    <CellData Scalars="material">
+      <DataArray type="Int64" Name="material" format="binary" RangeMin="-1" RangeMax="8">
+        AgAAAACAAAAAegAAvgAAAL0AAAA=eF7t1jsOAjAMBUF+978yFCDReUGK5GamcZds+Z5PAAAAAAAAAAAAAAAAAAAAAE64Xt7qPn689d+/qkvfrLr0zW6fd+vef7z137+qS9+suvQBwHm1+7b3X3Xpm1WXvlntvu39V136ZtWlDwDOq923vf+qS9+suvTNavdt77/q0jerLn0AcF7tvu39V136ZtWlb1a7b3v/VZe+WXXpA4Dzavdt77/q0jerLn2z2n3b+6+69M2qSx8AfL0A1Av7BHhe7dYrDgJAEAVBDJ/7XxgESDINySZjqsy43Zbv+Tzjenmr+/jx1n//qi59s+rSN7t93q17//HWf/+qLn2z6tIHAOfV7tvef9Wlb1Zd+ma1+7b3X3Xpm1WXPgA4r3bf9v6rLn2z6tI3q923vf+qS9+suvQBwHm1+7b3X3Xpm1WXvlntvu39V136ZtWlDwDOq923vf+qS9+suvTNavdt77/q0jerLn0AAAAAAAAAAAAAAAAAAAAAfPMCwHEIiQ==
+      </DataArray>
+    </CellData>
+  </Piece>
+  </ImageData>
+</VTKFile>

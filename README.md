@@ -11,6 +11,7 @@
 ---
 <p align="center">
   <img src="visuals/pv3d2.png" alt="MCCORE" width="750">
+  <img src="visuals/1DCellFluxThermal.png" alt="MCCORE" width="750">
 
 </p>
 
